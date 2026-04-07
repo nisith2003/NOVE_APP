@@ -557,3 +557,506 @@ class HomeScreenState extends State<HomeScreen> {
 }
 
 }
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'cart_screen.dart';
+import 'wishlist_screen.dart';
+
+class ProductDetailsScreen extends StatefulWidget {
+  final Map<String, dynamic> productData;
+
+  const ProductDetailsScreen({super.key, required this.productData});
+
+  @override
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+}
+
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  late String selectedSize;
+  late List<String> availableSizes;
+  late bool showSizeSelector;
+
+  Color selectedColor = Colors.black;
+  bool isLiked = false;
+
+  final List<Color> colors = [
+    Colors.black,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    String category = widget.productData['category'] ?? "";
+    if (category == "Shoes") {
+      availableSizes = ["UK 7", "UK 8", "UK 9", "UK 10", "UK 11"];
+      selectedSize = "UK 8";
+      showSizeSelector = true;
+    } else if (category == "Accessories") {
+      availableSizes = [];
+      selectedSize = "N/A";
+      showSizeSelector = false;
+    } else {
+      availableSizes = ["S", "M", "L", "XL"];
+      selectedSize = "M";
+      showSizeSelector = true;
+    }
+  }
+
+  void _showReviewDialog(BuildContext context, String productName) {
+    final TextEditingController _commentController = TextEditingController();
+    int _currentRating = 5;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            "Rate & Comment",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("How was your experience?"),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  5,
+                  (index) => IconButton(
+                    icon: Icon(
+                      Icons.star,
+                      size: 30,
+                      color: index < _currentRating
+                          ? Colors.orange
+                          : Colors.grey,
+                    ),
+                    onPressed: () =>
+                        setDialogState(() => _currentRating = index + 1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _commentController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "Write your comment here...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_commentController.text.isEmpty) return;
+                final user = FirebaseAuth.instance.currentUser;
+                await FirebaseFirestore.instance
+                    .collection('products')
+                    .doc(productName)
+                    .collection('reviews')
+                    .add({
+                      'userEmail': user?.email ?? "Guest User",
+                      'comment': _commentController.text,
+                      'rating': _currentRating,
+                      'timestamp': FieldValue.serverTimestamp(),
+                    });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Thank you for your review!")),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+              child: const Text("SUBMIT REVIEW"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String name = widget.productData['name'] ?? 'No Name';
+    final dynamic rawPrice = widget.productData['price'] ?? 0.0;
+    final String imageUrl =
+        widget.productData['image'] ?? 'https://via.placeholder.com/400';
+    final String description =
+        widget.productData['description'] ??
+        "Premium quality product from NOVE collection.";
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.network(
+                  imageUrl,
+                  height: 500,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "LKR $rawPrice",
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFC5A358),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "NOVE Exclusive Collection",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+
+                      if (showSizeSelector) ...[
+                        const SizedBox(height: 25),
+                        const Text(
+                          "Select Size",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: availableSizes.map((size) {
+                            bool isSelected = selectedSize == size;
+                            return GestureDetector(
+                              onTap: () => setState(() => selectedSize = size),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.black
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    size,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
+                      const SizedBox(height: 25),
+                      const Text(
+                        "Select Color",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: colors.map((color) {
+                          bool isSelected = selectedColor == color;
+                          return GestureDetector(
+                            onTap: () => setState(() => selectedColor = color),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 15),
+                              width: 35,
+                              height: 35,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(
+                                        color: const Color(0xFFC5A358),
+                                        width: 2,
+                                      )
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 16,
+                                    )
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 25),
+                      const Text(
+                        "Description",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        description,
+                        style: const TextStyle(color: Colors.grey, height: 1.5),
+                      ),
+
+                      // --- REVIEWS & COMMENTS SECTION ---
+                      const Divider(height: 50),
+                      const Text(
+                        "CUSTOMER REVIEWS",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('products')
+                            .doc(name)
+                            .collection('reviews')
+                            .orderBy('timestamp', descending: true)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData)
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          final reviews = snapshot.data!.docs;
+                          if (reviews.isEmpty)
+                            return const Text(
+                              "No reviews yet.",
+                              style: TextStyle(color: Colors.grey),
+                            );
+
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: reviews.length,
+                            itemBuilder: (context, index) {
+                              var rev = reviews[index];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  rev['userEmail'].split('@')[0],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(rev['comment']),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(
+                                    5,
+                                    (i) => Icon(
+                                      Icons.star,
+                                      size: 14,
+                                      color: i < rev['rating']
+                                          ? Colors.orange
+                                          : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+                      OutlinedButton.icon(
+                        onPressed: () => _showReviewDialog(context, name),
+                        icon: const Icon(
+                          Icons.rate_review_outlined,
+                          color: Colors.black,
+                        ),
+                        label: const Text(
+                          "WRITE A REVIEW",
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                      ),
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // --- Top Back & Wishlist Buttons ---
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.white.withOpacity(0.9),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 18,
+                        color: Colors.black,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  CircleAvatar(
+                    backgroundColor: Colors.white.withOpacity(0.9),
+                    child: IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? Colors.red : Colors.black,
+                      ),
+                      onPressed: () {
+                        setState(() => isLiked = !isLiked);
+                        if (isLiked) {
+                          final wishItem = {
+                            "name": name,
+                            "price": rawPrice,
+                            "image": imageUrl,
+                          };
+                          if (!WishlistScreen.wishListItems.any(
+                            (item) => item['name'] == name,
+                          ))
+                            WishlistScreen.wishListItems.add(wishItem);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // --- Bottom Add to Cart Button with SnackBar Action ---
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              color: Colors.white,
+              child: SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final cartItem = {
+                      "name": name,
+                      "price": rawPrice,
+                      "image": imageUrl,
+                      "size": selectedSize,
+                      "quantity": 1,
+                    };
+                    setState(() {
+                      int index = CartScreen.globalCartItems.indexWhere(
+                        (item) =>
+                            item['name'] == name &&
+                            item['size'] == selectedSize,
+                      );
+                      if (index == -1) {
+                        CartScreen.globalCartItems.add(cartItem);
+                      } else {
+                        CartScreen.globalCartItems[index]['quantity'] += 1;
+                      }
+                    });
+
+                    // SnackBar with View Cart Button
+                    ScaffoldMessenger.of(
+                      context,
+                    ).clearSnackBars(); // පරණ මැසේජ් අයින් කරනවා
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Added $name ($selectedSize) to cart!"),
+                        backgroundColor: Colors.black,
+                        duration: const Duration(seconds: 3),
+                        action: SnackBarAction(
+                          label: "VIEW CART",
+                          textColor: const Color(0xFFC5A358),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CartScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  child: const Text(
+                    "ADD TO CART",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
