@@ -1145,3 +1145,124 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
+import 'package:flutter/material.dart';
+
+class WishlistScreen extends StatefulWidget {
+  final Map<String, dynamic>? newItem;
+  const WishlistScreen({super.key, this.newItem});
+
+  static List<Map<String, dynamic>> wishListItems = [];
+
+  @override
+  State<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends State<WishlistScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.newItem != null) {
+      bool isExist = WishlistScreen.wishListItems.any(
+        (item) => item['name'] == widget.newItem!['name'],
+      );
+      if (!isExist) {
+        WishlistScreen.wishListItems.add(widget.newItem!);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "MY WISHLIST",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: WishlistScreen.wishListItems.isEmpty
+          ? const Center(
+              child: Text(
+                "Your wishlist is empty",
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: WishlistScreen.wishListItems.length,
+              itemBuilder: (context, index) {
+                var item = WishlistScreen.wishListItems[index];
+                return _buildWishlistItem(item, index);
+              },
+            ),
+    );
+  }
+
+  Widget _buildWishlistItem(Map<String, dynamic> item, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              item['image'],
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['name'],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "LKR ${item['price']}",
+                  style: const TextStyle(
+                    color: Color(0xFFC5A358),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Delete Button
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+            onPressed: () {
+              setState(() {
+                WishlistScreen.wishListItems.removeAt(index);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
