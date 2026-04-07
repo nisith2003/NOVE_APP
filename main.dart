@@ -1057,3 +1057,91 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 }
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'product_details.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  String _searchName = "";
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: "Search products...",
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: Colors.grey),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _searchName = value
+                  .toLowerCase(); // ටයිප් කරනකොටම UI එක update වෙනවා
+            });
+          },
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('products').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFC5A358)),
+            );
+          }
+
+          var docs = snapshot.data!.docs.where((doc) {
+            String name = (doc['name'] ?? "").toString().toLowerCase();
+            return name.contains(_searchName);
+          }).toList();
+
+          if (docs.isEmpty) {
+            return const Center(child: Text("No products found."));
+          }
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              var data = docs[index].data() as Map<String, dynamic>;
+              return ListTile(
+                leading: Image.network(
+                  data['image'],
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
+                title: Text(data['name']),
+                subtitle: Text("LKR ${data['price']}"),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProductDetailsScreen(productData: data),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
