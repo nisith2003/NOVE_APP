@@ -1266,3 +1266,246 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 }
+  import 'package:flutter/material.dart';
+import 'checkout_screen.dart';
+
+class CartScreen extends StatefulWidget {
+  final Map<String, dynamic>? newItem;
+
+  const CartScreen({super.key, this.newItem});
+
+  static List<Map<String, dynamic>> globalCartItems = [];
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.newItem != null) {
+      bool isExist = CartScreen.globalCartItems.any(
+        (item) =>
+            item['name'] == widget.newItem!['name'] &&
+            item['size'] == widget.newItem!['size'],
+      );
+
+      if (!isExist) {
+        CartScreen.globalCartItems.add(widget.newItem!);
+      } else {
+        int index = CartScreen.globalCartItems.indexWhere(
+          (item) =>
+              item['name'] == widget.newItem!['name'] &&
+              item['size'] == widget.newItem!['size'],
+        );
+        CartScreen.globalCartItems[index]['quantity'] +=
+            widget.newItem!['quantity'];
+      }
+    }
+  }
+
+  double get totalPayment {
+    return CartScreen.globalCartItems.fold(0.0, (sum, item) {
+      double price = (item['price'] ?? 0.0).toDouble();
+      int quantity = (item['quantity'] ?? 1);
+      return sum + (price * quantity);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "MY CART",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: CartScreen.globalCartItems.isEmpty
+          ? const Center(
+              child: Text(
+                "Your cart is empty",
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(15),
+                    itemCount: CartScreen.globalCartItems.length,
+                    itemBuilder: (context, index) {
+                      return _buildCartItem(index);
+                    },
+                  ),
+                ),
+                _buildTotalSection(),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildCartItem(int index) {
+    var item = CartScreen.globalCartItems[index];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              image: DecorationImage(
+                image: NetworkImage(
+                  item['image'] ?? 'https://via.placeholder.com/150',
+                ),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['name'] ?? 'No Name',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  "Size: ${item['size'] ?? 'M'}",
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  "LKR ${item['price']}",
+                  style: const TextStyle(
+                    color: Color(0xFFC5A358),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 22,
+                ),
+                onPressed: () {
+                  setState(() {
+                    CartScreen.globalCartItems.removeAt(index);
+                  });
+                },
+              ),
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, size: 20),
+                    onPressed: () {
+                      if (item['quantity'] > 1) {
+                        setState(() => item['quantity']--);
+                      }
+                    },
+                  ),
+                  Text(
+                    "${item['quantity']}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    onPressed: () => setState(() => item['quantity']++),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalSection() {
+    return Container(
+      padding: const EdgeInsets.all(25),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Total Payment",
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              Text(
+                "LKR ${totalPayment.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CheckoutScreen()),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              child: const Text(
+                "CHECKOUT",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
