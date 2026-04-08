@@ -2690,4 +2690,35 @@ class OrderHistoryScreen extends StatelessWidget {
     );
   }
 }
+  class Product {
+  final String id;
+  final String name;
+  final double price;
+  final String image;
+  final String category;
+  final String size;
+  final int stock;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.image,
+    required this.category,
+    required this.size,
+    required this.stock,
+  });
+
+  factory Product.fromFirestore(Map<String, dynamic> data, String documentId) {
+    return Product(
+      id: documentId,
+      name: data['name'] ?? '',
+      price: (data['price'] ?? 0).toDouble(),
+      image: data['image'] ?? '',
+      category: data['category'] ?? '',
+      size: data['size'] ?? 'M',
+      stock: data['stock'] ?? 0,
+    );
+  }
+}
 
