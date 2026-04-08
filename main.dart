@@ -1508,4 +1508,175 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 }
+  import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
+import 'order_history.dart';
+import 'wishlist_screen.dart'; 
+import 'settings_screen.dart'; 
+
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "MY PROFILE",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Column(
+          children: [
+            const SizedBox(height: 30),
+
+            // User Avatar Section
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: const Color(0xFFC5A358).withOpacity(0.1),
+              child: Text(
+                user?.email != null ? user!.email![0].toUpperCase() : "U",
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFC5A358),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // User Email Display
+            Text(
+              user?.email ?? "Not Logged In",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const Text("Loyalty Member", style: TextStyle(color: Colors.grey)),
+
+            const SizedBox(height: 40),
+            const Divider(),
+
+            // --- Profile Options List ---
+
+            // 1. My Orders
+            _buildProfileOption(
+              icon: Icons.shopping_bag_outlined,
+              title: "My Orders",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OrderHistoryScreen(),
+                  ),
+                );
+              },
+            ),
+
+            // 2. My Wishlist
+            _buildProfileOption(
+              icon: Icons.favorite_border,
+              title: "My Wishlist",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WishlistScreen(),
+                  ),
+                );
+              },
+            ),
+
+            // 3. Settings
+            _buildProfileOption(
+              icon: Icons.settings_outlined,
+              title: "Settings",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
+
+            const Spacer(),
+
+            // 4. Logout Button Section
+            Padding(
+              padding: const EdgeInsets.all(25.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    // Firebase Logout Logic
+                    await FirebaseAuth.instance.signOut();
+
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  label: const Text(
+                    "LOGOUT",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey,
+      ),
+      onTap: onTap,
+    );
+  }
+}
 
