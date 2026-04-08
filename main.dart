@@ -2552,4 +2552,142 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
+  import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
+class OrderHistoryScreen extends StatelessWidget {
+  const OrderHistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "MY ORDERS",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        // Firestore
+        stream: FirebaseFirestore.instance
+            .collection('orders')
+            .where('userId', isEqualTo: user?.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFC5A358)),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No orders found.",
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          }
+
+          final orders = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(15),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              var data = orders[index].data() as Map<String, dynamic>;
+
+              // Timestamp එක කියවන්න පුළුවන් විදිහට format කරගන්නවා
+              String formattedDate = "";
+              if (data['orderDate'] != null) {
+                DateTime date = (data['orderDate'] as Timestamp).toDate();
+                formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(date);
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 15),
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.grey.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Order #${orders[index].id.substring(0, 5)}",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC5A358).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            data['status'] ?? 'Pending',
+                            style: const TextStyle(
+                              color: Color(0xFFC5A358),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Date: $formattedDate",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                    const Divider(height: 20),
+                    Text(
+                      "Address: ${data['address']}",
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    if (data['phone'] != null)
+                      Text(
+                        "Phone: ${data['phone']}",
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
 
