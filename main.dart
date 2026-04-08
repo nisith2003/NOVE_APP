@@ -1816,4 +1816,49 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
+  import 'package:flutter/material.dart';
+
+class CategoryPage extends StatelessWidget {
+  final String categoryName;
+
+  CategoryPage({required this.categoryName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          categoryName.toUpperCase(),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Text(
+              "Showing all items in $categoryName",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+
+          Expanded(
+            child: Center(
+              child: Text(
+                "$categoryName Items Coming Soon!",
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
