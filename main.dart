@@ -1679,4 +1679,141 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+  import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "SETTINGS",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text(
+            "Account Settings",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          _buildSettingsOption(
+            icon: Icons.lock_outline,
+            title: "Change Password",
+            onTap: () {
+              // පස්සේ කාලෙක මෙතනට පාස්වර්ඩ් reset link එකක් යවන logic එක දාන්න පුළුවන්
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Password reset link sent to your email!"),
+                ),
+              );
+            },
+          ),
+
+          _buildSettingsOption(
+            icon: Icons.notifications_none,
+            title: "Notifications",
+            onTap: () {},
+          ),
+
+          const SizedBox(height: 30),
+          const Text(
+            "Support & About",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          _buildSettingsOption(
+            icon: Icons.help_outline,
+            title: "Help Center",
+            onTap: () {},
+          ),
+
+          _buildSettingsOption(
+            icon: Icons.info_outline,
+            title: "About NOVE",
+            onTap: () {
+              showAboutDialog(
+                context: context,
+                applicationName: "NOVE",
+                applicationVersion: "1.0.0",
+                applicationIcon: const Icon(
+                  Icons.shopping_bag,
+                  color: Color(0xFFC5A358),
+                ),
+                children: [
+                  const Text(
+                    "This is a premium e-commerce application developed for academic project purposes.",
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 30),
+          // Privacy Policy
+          _buildSettingsOption(
+            icon: Icons.privacy_tip_outlined,
+            title: "Privacy Policy",
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: Colors.black, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+      ),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 14,
+        color: Colors.grey,
+      ),
+      onTap: onTap,
+    );
+  }
+}
 
