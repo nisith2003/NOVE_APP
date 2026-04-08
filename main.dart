@@ -2266,4 +2266,290 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
+  import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_screen.dart';
+
+class CheckoutScreen extends StatefulWidget {
+  const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+
+  String _selectedPayment = "Card"; // Default payment method
+  bool _isProcessing = false;
+
+  Future<void> _placeOrder() async {
+    if (_addressController.text.isEmpty || _phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all shipping details")),
+      );
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await FirebaseFirestore.instance.collection('orders').add({
+        'userId': user?.uid,
+        'address': "${_addressController.text}, ${_cityController.text}",
+        'phone': _phoneController.text,
+        'paymentMethod': _selectedPayment,
+        'orderDate': FieldValue.serverTimestamp(),
+        'status': 'Pending',
+      });
+
+      if (mounted) _showSuccessDialog();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.black, size: 80),
+            const SizedBox(height: 20),
+            const Text(
+              "ORDER PLACED!",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "Thank you for shopping with NOVE.",
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              ),
+              child: const Text(
+                "CONTINUE SHOPPING",
+                style: TextStyle(
+                  color: Color(0xFFC5A358),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "CHECKOUT",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "SHIPPING ADDRESS",
+              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+            const SizedBox(height: 15),
+            _buildTextField(_addressController, "Street Address"),
+            const SizedBox(height: 10),
+            _buildTextField(_cityController, "City"),
+            const SizedBox(height: 10),
+            _buildTextField(_phoneController, "Phone Number", isPhone: true),
+
+            const SizedBox(height: 40),
+            const Text(
+              "PAYMENT METHOD",
+              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+            const SizedBox(height: 10),
+
+            // --- Payment Methods Section ---
+            _buildPaymentOption(
+              "Card Payment",
+              "Visa / Master / Koko",
+              Icons.credit_card,
+            ),
+            _buildPaymentOption(
+              "Cash on Delivery",
+              "Pay when you receive",
+              Icons.local_shipping,
+            ),
+
+            const SizedBox(height: 40),
+            _buildOrderSummary(),
+            const SizedBox(height: 30),
+
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: _isProcessing ? null : _placeOrder,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                child: _isProcessing
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "COMPLETE ORDER",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint, {
+    bool isPhone = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 15,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.black),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentOption(String title, String sub, IconData icon) {
+    bool isSelected =
+        _selectedPayment == (title.contains("Card") ? "Card" : "COD");
+    return GestureDetector(
+      onTap: () => setState(
+        () => _selectedPayment = title.contains("Card") ? "Card" : "COD",
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? Colors.black : Colors.grey),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    sub,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected) const Icon(Icons.check_circle, color: Colors.black),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderSummary() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: Colors.grey.shade50,
+      child: const Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [Text("Subtotal"), Text("LKR 4,900.00")],
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [Text("Shipping"), Text("LKR 350.00")],
+          ),
+          Divider(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "TOTAL",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              Text(
+                "LKR 5,250.00",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
